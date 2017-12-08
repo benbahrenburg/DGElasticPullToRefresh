@@ -1,28 +1,28 @@
 /*
-
-The MIT License (MIT)
-
-Copyright (c) 2015 Danil Gontovnik
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-*/
+ 
+ The MIT License (MIT)
+ 
+ Copyright (c) 2015 Danil Gontovnik
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ 
+ */
 
 import UIKit
 
@@ -57,13 +57,15 @@ open class DGElasticPullToRefreshView: UIView {
             let previousValue = state
             _state = newValue
             
+            fillColor = startColor
             if previousValue == .dragging && newValue == .animatingBounce {
                 loadingView?.startAnimating()
                 animateBounce()
             } else if newValue == .loading && actionHandler != nil {
                 actionHandler()
             } else if newValue == .animatingToStopped {
-                resetScrollViewContentInset(shouldAddObserverWhenFinished: true, animated: true, completion: { [weak self] () -> () in self?.state = .stopped })
+                fillColor = endColor
+                resetScrollViewContentInset(shouldAddObserverWhenFinished: true, animated: true, completion: { [weak self] () -> Void in self?.state = .stopped })
             } else if newValue == .stopped {
                 loadingView?.stopLoading()
             }
@@ -90,6 +92,7 @@ open class DGElasticPullToRefreshView: UIView {
         didSet {
             guard let scrollView = scrollView() else { return }
             if observing {
+                state = .stopped
                 scrollView.dg_addObserver(self, forKeyPath: DGElasticPullToRefreshConstants.KeyPaths.ContentOffset)
                 scrollView.dg_addObserver(self, forKeyPath: DGElasticPullToRefreshConstants.KeyPaths.ContentInset)
                 scrollView.dg_addObserver(self, forKeyPath: DGElasticPullToRefreshConstants.KeyPaths.Frame)
@@ -104,6 +107,8 @@ open class DGElasticPullToRefreshView: UIView {
     }
     
     var fillColor: UIColor = .clear { didSet { shapeLayer.fillColor = fillColor.cgColor } }
+    var startColor: UIColor = .clear { didSet { shapeLayer.fillColor = fillColor.cgColor } }
+    var endColor: UIColor = .clear { didSet { shapeLayer.fillColor = fillColor.cgColor } }
     
     // MARK: Views
     
@@ -129,7 +134,7 @@ open class DGElasticPullToRefreshView: UIView {
         
         shapeLayer.backgroundColor = UIColor.clear.cgColor
         shapeLayer.fillColor = UIColor.black.cgColor
-        shapeLayer.actions = ["path" : NSNull(), "position" : NSNull(), "bounds" : NSNull()]
+        shapeLayer.actions = ["path": NSNull(), "position": NSNull(), "bounds": NSNull()]
         layer.addSublayer(shapeLayer)
         
         addSubview(bounceAnimationHelperView)
@@ -143,32 +148,33 @@ open class DGElasticPullToRefreshView: UIView {
         
         NotificationCenter.default.addObserver(self, selector: #selector(DGElasticPullToRefreshView.applicationWillEnterForeground), name: NSNotification.Name.UIApplicationWillEnterForeground, object: nil)
     }
-
+    
     required public init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
     // MARK: -
-
+    
     /**
-    Has to be called when the receiver is no longer required. Otherwise the main loop holds a reference to the receiver which in turn will prevent the receiver from being deallocated.
-    */
+     Has to be called when the receiver is no longer required. Otherwise the main loop holds a reference to the receiver which in turn will prevent the receiver from being deallocated.
+     */
     func disassociateDisplayLink() {
         displayLink?.invalidate()
     }
-
+    
     deinit {
         observing = false
         NotificationCenter.default.removeObserver(self)
     }
-
+    
     // MARK: -
     // MARK: Observer
-
-    override open func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    
+    override open func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == DGElasticPullToRefreshConstants.KeyPaths.ContentOffset {
-            if let newContentOffset = change?[NSKeyValueChangeKey.newKey], let scrollView = scrollView() {
-                let newContentOffsetY = (newContentOffset as AnyObject).cgPointValue.y
+            
+            if let change = change, let scrollView = scrollView() {
+                let newContentOffsetY = (change[NSKeyValueChangeKey.newKey] as AnyObject).cgPointValue.y
                 if state.isAnyOf([.loading, .animatingToStopped]) && newContentOffsetY < -scrollView.contentInset.top {
                     scrollView.contentOffset.y = -scrollView.contentInset.top
                 } else {
@@ -177,8 +183,8 @@ open class DGElasticPullToRefreshView: UIView {
                 layoutSubviews()
             }
         } else if keyPath == DGElasticPullToRefreshConstants.KeyPaths.ContentInset {
-            if let newContentInset = change?[NSKeyValueChangeKey.newKey] {
-                let newContentInsetTop = (newContentInset as AnyObject).uiEdgeInsetsValue.top
+            if let change = change {
+                let newContentInsetTop = (change[NSKeyValueChangeKey.newKey] as AnyObject).uiEdgeInsetsValue.top
                 originalContentInsetTop = newContentInsetTop
             }
         } else if keyPath == DGElasticPullToRefreshConstants.KeyPaths.Frame {
@@ -189,7 +195,7 @@ open class DGElasticPullToRefreshView: UIView {
             }
         }
     }
-
+    
     // MARK: -
     // MARK: Notifications
     
@@ -269,7 +275,7 @@ open class DGElasticPullToRefreshView: UIView {
         }
     }
     
-    fileprivate func resetScrollViewContentInset(shouldAddObserverWhenFinished: Bool, animated: Bool, completion: (() -> ())?) {
+    fileprivate func resetScrollViewContentInset(shouldAddObserverWhenFinished: Bool, animated: Bool, completion: (() -> Void)?) {
         guard let scrollView = scrollView() else { return }
         
         var contentInset = scrollView.contentInset
@@ -303,11 +309,8 @@ open class DGElasticPullToRefreshView: UIView {
         }
     }
     
-    fileprivate func animateBounce()
-    {
+    fileprivate func animateBounce() {
         guard let scrollView = scrollView() else { return }
-        if (!self.observing) { return }
-        
         
         resetScrollViewContentInset(shouldAddObserverWhenFinished: false, animated: false, completion: nil)
         
@@ -334,7 +337,7 @@ open class DGElasticPullToRefreshView: UIView {
                     scrollView.isScrollEnabled = true
                 }
                 self?.state = .loading
-            })
+        })
         
         bounceAnimationHelperView.center = CGPoint(x: 0.0, y: originalContentInsetTop + currentHeight())
         UIView.animate(withDuration: duration * 0.4, animations: { [weak self] in
@@ -361,7 +364,7 @@ open class DGElasticPullToRefreshView: UIView {
         
         if state == .animatingBounce {
             guard let scrollView = scrollView() else { return }
-        
+            
             scrollView.contentInset.top = bounceAnimationHelperView.dg_center(isAnimating()).y
             scrollView.contentOffset.y = -scrollView.contentInset.top
             
@@ -371,7 +374,7 @@ open class DGElasticPullToRefreshView: UIView {
         } else if state == .animatingToStopped {
             height = actualContentOffsetY()
         }
-    
+        
         shapeLayer.frame = CGRect(x: 0.0, y: 0.0, width: width, height: height)
         shapeLayer.path = currentPath()
         
@@ -397,7 +400,7 @@ open class DGElasticPullToRefreshView: UIView {
     override open func layoutSubviews() {
         super.layoutSubviews()
         
-        if let scrollView = scrollView() , state != .animatingBounce {
+        if let scrollView = scrollView(), state != .animatingBounce {
             let width = scrollView.bounds.width
             let height = currentHeight()
             
@@ -423,7 +426,7 @@ open class DGElasticPullToRefreshView: UIView {
                 let leftPartWidth = locationX - minLeftX
                 let rightPartWidth = maxRightX - locationX
                 
-                cControlPointView.center = CGPoint(x: locationX , y: baseHeight + waveHeight * 1.36)
+                cControlPointView.center = CGPoint(x: locationX, y: baseHeight + waveHeight * 1.36)
                 l1ControlPointView.center = CGPoint(x: minLeftX + leftPartWidth * 0.71, y: baseHeight + waveHeight * 0.64)
                 l2ControlPointView.center = CGPoint(x: minLeftX + leftPartWidth * 0.44, y: baseHeight)
                 l3ControlPointView.center = CGPoint(x: minLeftX, y: baseHeight)
