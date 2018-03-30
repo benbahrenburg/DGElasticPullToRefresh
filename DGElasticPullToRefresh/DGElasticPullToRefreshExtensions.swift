@@ -166,7 +166,7 @@ public extension UIScrollView {
     }
     
     func dg_stopScrollingAnimation() {
-        if let superview = self.superview, let index = superview.subviews.index(where: { $0 == self }) as Int! {
+        if let superview = self.superview, let index = superview.subviews.index(where: { $0 == self }) as Int? {
             superview.insertSubview(self, at: index)
         }
     }
