@@ -56,19 +56,19 @@ public extension NSObject {
     // MARK: -
     // MARK: Methods
     
-    public func dg_addObserver(_ observer: NSObject, forKeyPath keyPath: String) {
+    func dg_addObserver(_ observer: NSObject, forKeyPath keyPath: String) {
         let observerInfo = [keyPath: observer]
         
-        if dg_observers.index(where: { $0 == observerInfo }) == nil {
+        if dg_observers.firstIndex(where: { $0 == observerInfo }) == nil {
             dg_observers.append(observerInfo)
             addObserver(observer, forKeyPath: keyPath, options: .new, context: nil)
         }
     }
     
-    public func dg_removeObserver(_ observer: NSObject, forKeyPath keyPath: String) {
+    func dg_removeObserver(_ observer: NSObject, forKeyPath keyPath: String) {
         let observerInfo = [keyPath: observer]
         
-        if let index = dg_observers.index(where: { $0 == observerInfo}) {
+        if let index = dg_observers.firstIndex(where: { $0 == observerInfo}) {
             dg_observers.remove(at: index)
             removeObserver(observer, forKeyPath: keyPath)
         }
@@ -115,19 +115,18 @@ public extension UIScrollView {
     
     // MARK: -
     // MARK: Methods (Public)
-    
-    public func dg_pullToRefreshViewExist() -> Bool {
+    func dg_pullToRefreshViewExist() -> Bool {
         if (dg_pullToRefreshView.superview != nil) {
             return true
         }
         return false
     }
     
-    public func dg_addPullToRefreshWithActionHandler(_ actionHandler: @escaping () -> Void) {
+    func dg_addPullToRefreshWithActionHandler(_ actionHandler: @escaping () -> Void) {
         dg_addPullToRefreshWithActionHandler(actionHandler, loadingView: nil)
     }
     
-    public func dg_addPullToRefreshWithActionHandler(_ actionHandler: @escaping () -> Void, loadingView: DGElasticPullToRefreshLoadingView?) {
+    func dg_addPullToRefreshWithActionHandler(_ actionHandler: @escaping () -> Void, loadingView: DGElasticPullToRefreshLoadingView?) {
         isMultipleTouchEnabled = false
         panGestureRecognizer.maximumNumberOfTouches = 1
         
@@ -138,35 +137,35 @@ public extension UIScrollView {
         dg_pullToRefreshView.observing = true
     }
     
-    public func dg_removePullToRefresh() {
+    func dg_removePullToRefresh() {
         
         dg_pullToRefreshView.observing = false
         dg_pullToRefreshView.actionHandler = nil
         dg_pullToRefreshView.removeFromSuperview()
     }
     
-    public func dg_setPullToRefreshBackgroundColor(_ color: UIColor) {
+    func dg_setPullToRefreshBackgroundColor(_ color: UIColor) {
         dg_pullToRefreshView.backgroundColor = color
     }
     
-    public func dg_setPullToRefreshFillColor(_ color: UIColor) {
+    func dg_setPullToRefreshFillColor(_ color: UIColor) {
         dg_pullToRefreshView.fillColor = color
         dg_pullToRefreshView.startColor = color
         dg_pullToRefreshView.endColor = color
     }
     
-    public func dg_setPullToRefreshFillColor(_ color: UIColor, endColor: UIColor) {
+    func dg_setPullToRefreshFillColor(_ color: UIColor, endColor: UIColor) {
         dg_pullToRefreshView.fillColor = color
         dg_pullToRefreshView.startColor = color
         dg_pullToRefreshView.endColor = endColor
     }
     
-    public func dg_stopLoading() {
+    func dg_stopLoading() {
         dg_pullToRefreshView.stopLoading()
     }
     
     func dg_stopScrollingAnimation() {
-        if let superview = self.superview, let index = superview.subviews.index(where: { $0 == self }) as Int? {
+        if let superview = self.superview, let index = superview.subviews.firstIndex(where: { $0 == self }) as Int? {
             superview.insertSubview(self, at: index)
         }
     }
